@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Formulario de alta</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>Formulario de alta</h1>
+    </header>
+
+    <div class="contenido">
+        <form name="formulario" id="formulario">
+            <section class="fila-formulario">
+                <div>
+                    <label for="nombre">Nombre</label>
+                    <input id="nombre" name="nombre" type="text" placeholder="Juan">
+                </div>
+                <div>
+                    <label for="apellidos">Apellidos</label>
+                    <input id="apellidos" name="apellidos" type="text" placeholder="Pérez García">
+                </div>
+            </section>
+            <section class="fila-formulario">
+                <div>
+                    <label for="dninie">DNI/NIE</label>
+                    <input id="dninie" name="dninie" type="text" placeholder="12345678A">
+                </div>
+                <div>
+                    <label for="nacimiento">Fecha de Nacimiento</label>
+                    <input id="nacimiento" name="nacimiento" type="text" placeholder="01/01/2000">
+                </div>
+            </section>
+            <section class="fila-formulario">
+                <div>
+                    <label for="postal">Código postal</label>
+                    <input id="postal" name="postal" type="text" placeholder="35500">
+                </div>
+                <div>
+                    <label for="email">E-mail</label>
+                    <input id="email" name="email" type="text" placeholder="ejemplo@gmail.com">
+                </div>
+            </section>
+            <section class="fila-formulario">
+                <div>
+                    <label for="fijo">Teléfono fijo</label>
+                    <input id="fijo" name="fijo" type="text" placeholder="987654321">
+                </div>
+                <div>
+                    <label for="movil">Teléfono móvil</label>
+                    <input id="movil" name="movil" type="text" placeholder="654321111">
+                </div>
+            </section>
+            <section class="fila-formulario">
+                <div>
+                    <label for="iban">IBAN</label>
+                    <input id="iban" name="iban" type="text" placeholder="Introducir">
+                </div>
+                <div>
+                    <label for="credito">Tarjeta de crédito</label>
+                    <input id="credito" name="credito" type="text" placeholder="Introducir">
+                </div>
+            </section>
+            <section class="fila-formulario">
+                <div>
+                    <label for="contrasena">Contraseña</label>
+                    <input id="contrasena" name="contrasena" type="password" placeholder="123456abcde_">
+                </div>
+                <div>
+                    <label for="repcontrasena">Repetir contraseña</label>
+                    <input id="repcontrasena" name="repcontrasena" type="password" placeholder="123456abcde_">
+                </div>
+            </section>
+            <section class="fila-formulario">
+                <div class="contenedor-boton">
+                    <button class="boton-principal" id="btnguardar" type="submit">Guardar</button>
+                </div>
+                <div class="contenedor-boton">
+                    <button class="boton-principal" id="btncargar" type="submit">Cargar</button>
+                </div>
+            </section>
+        </form>
+
+        <!-- <div id="form-mensaje" class="mensaje oculto"></div> -->
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
