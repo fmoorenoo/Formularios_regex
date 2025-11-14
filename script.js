@@ -15,9 +15,9 @@ const patterns = {
     email: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
     fijo: /^(8|9)\d{8}$/,
     movil: /^(6|7)\d{8}$/,
-    iban: /^ES(?:\s?\d){22}$/i,
-    credito: /^(?:4\d{12}(?:\d{3})?|5[1-5]\d{14}|3[47]\d{13}|3(?:0[0-5]|[68]\d)\d{11}|6(?:011|5\d{2})\d{12})$/,
-    contrasena: /^(?=.*\d)(?=.*[^a-z0-9\s])[a-z0-9\S]{12,}$/
+    iban: /^ES\d{22}$/,
+    credito: /^\d{13,19}$/,
+    contrasena: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/
 };
 
 
@@ -30,10 +30,7 @@ const inputs = document.querySelectorAll('input');
 
 //// Haciendo uso del método forEach, añadimos el evento keyup a cada uno de los inputs de la colección '(input)'.
 inputs.forEach((input) => {
-    input.addEventListener('keyup', (e) => {
-        //// 1)    
-        //if (e.target.name =="dni") {validate(e.target, dni)};
-        //if (e.target.name =="username") {validate(e.target, username)};
+    input.addEventListener('keyup', (e) => { 
         if (e.target.attributes.name.value.trim() != "") {
             validate(e.target, patterns[e.target.attributes.name.value]);
         }
@@ -41,15 +38,51 @@ inputs.forEach((input) => {
 });
 
 
-//// Declaración de la función de validación 'validate' para validar el valor del campo del formulario (variable 'campo') utilizando la expresión regular (variable 'regex').  
 function validate(campo, regex) {
-    // El método 'test' comprueba que el valor del campo recibido (e.target) cumple la expresión regular recibida (patterns[e.target.attributes.name.value]) como parámetros  
+    const contenedor = campo.parentElement;
+
+    const mensajes = {
+        nombre: "El nombre debe empezar con mayúscula.",
+        apellidos: "Máximo dos apellidos y deben empezar con mayúscula.",
+        dninie: "DNI/NIE inválido.",
+        nacimiento: "El formato debe ser dd/mm/aaaa",
+        postal: "Código postal inválido.",
+        email: "Formato de email inválido.",
+        fijo: "Debe empezar por 8 o 9, y deben ser 9 dígitos.",
+        movil: "Debe empezar por 6 o 7, y deben ser 9 dígitos.",
+        iban: "IBAN incorrecto. Debe ser 'ES', seguido de 22 dígitos.",
+        credito: "Tarjeta no válida. Debe tener entre 13 y 19 dígitos",
+        contrasena: "Debe tener 12 caracteres incluyendo letra, número y símbolo."
+    };
+
+    // Buscar si ya existe un mensaje para no duplicar
+    let mensaje = contenedor.querySelector('.mensaje-error');
+
+    if (!mensaje) {
+        mensaje = document.createElement('div');
+        mensaje.classList.add('mensaje-error');
+        contenedor.appendChild(mensaje);
+    }
+
+    if (campo.value.trim() === "") {
+        campo.classList.remove('valido', 'invalido');
+        mensaje.textContent = "";
+        mensaje.style.display = "none";
+        return;
+    }
+
     if (regex.test(campo.value)) {
-        campo.className = 'valido';
+        campo.classList.remove('invalido');
+        campo.classList.add('valido');
+
+        mensaje.textContent = "";
+        mensaje.style.display = "none";
     } else {
-        campo.className = 'invalido';
+        campo.classList.remove('valido');
+        campo.classList.add('invalido');
+
+        mensaje.textContent = mensajes[campo.name] || "El valor introducido no es válido";
+        mensaje.style.display = "block";
     }
 }
 
-
-//// https://www.w3schools.com/jsref/jsref_regexp_test.asp

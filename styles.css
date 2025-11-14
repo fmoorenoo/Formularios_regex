@@ -81,3 +81,10 @@ button:hover {
 .oculto {
     display: none !important;
 }
+
+.mensaje-error {
+    font-size: 0.8em;
+    color: red;
+    margin-top: 4px;
+    display: none;
+}
