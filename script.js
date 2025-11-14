@@ -1,11 +1,10 @@
-//// 1) Declaración de constantes con los patrones de REGEX.
+const btnGuardar = document.getElementById('btnguardar');
+btnGuardar.disabled = true;
+const btnRecuperar = document.getElementById('btnrecuperar');
+const infoMsg = document.querySelector('.info-msg');
 
-//const username=/^[a-z\d]{5,12}$/i;
-//const dni=/^[x]*\d{8}[a-z]$/i
 
-
-//// 2) Declaración del objeto de patrones de REGEX.
-
+// Objeto de patrones de REGEX.
 const patterns = {
     nombre: /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/u,
     apellidos: /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?$/u,
@@ -17,7 +16,8 @@ const patterns = {
     movil: /^(6|7)\d{8}$/,
     iban: /^ES\d{22}$/,
     credito: /^\d{13,19}$/,
-    contrasena: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/
+    contrasena: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/,
+    repcontrasena: /.*/
 };
 
 
@@ -30,7 +30,7 @@ const inputs = document.querySelectorAll('input');
 
 //// Haciendo uso del método forEach, añadimos el evento keyup a cada uno de los inputs de la colección '(input)'.
 inputs.forEach((input) => {
-    input.addEventListener('keyup', (e) => { 
+    input.addEventListener('keyup', (e) => {
         if (e.target.attributes.name.value.trim() != "") {
             validate(e.target, patterns[e.target.attributes.name.value]);
         }
@@ -42,7 +42,7 @@ function validate(campo, regex) {
     const contenedor = campo.parentElement;
 
     const mensajes = {
-        nombre: "El nombre debe empezar con mayúscula.",
+        nombre: "El nombre debe empezar con mayúscula y solo letras.",
         apellidos: "Máximo dos apellidos y deben empezar con mayúscula.",
         dninie: "DNI/NIE inválido.",
         nacimiento: "El formato debe ser dd/mm/aaaa",
@@ -55,7 +55,6 @@ function validate(campo, regex) {
         contrasena: "Debe tener 12 caracteres incluyendo letra, número y símbolo."
     };
 
-    // Buscar si ya existe un mensaje para no duplicar
     let mensaje = contenedor.querySelector('.mensaje-error');
 
     if (!mensaje) {
@@ -84,5 +83,68 @@ function validate(campo, regex) {
         mensaje.textContent = mensajes[campo.name] || "El valor introducido no es válido";
         mensaje.style.display = "block";
     }
+
+    // Verificar que repetir contraseña sea igual a contraseña
+    if (campo.name === "repcontrasena") {
+        const contrasena = document.querySelector('input[name="contrasena"]');
+
+        if (campo.value === contrasena.value && campo.value !== "") {
+            campo.classList.remove('invalido');
+            campo.classList.add('valido');
+            mensaje.textContent = "";
+            mensaje.style.display = "none";
+        } else {
+            campo.classList.remove('valido');
+            campo.classList.add('invalido');
+            mensaje.textContent = "Las contraseñas no coinciden.";
+            mensaje.style.display = "block";
+        }
+    }
+
+    // Comprobar si tyodos los campos son válidos para habilitar el botón de guardar
+    let todosValidos = true;
+    inputs.forEach((input) => {
+        if (!input.classList.contains('valido')) {
+            todosValidos = false;
+        }
+    });
+    btnGuardar.disabled = !todosValidos;
 }
 
+// Guardar datos con localStorage
+function guardarDatos() {
+    const datos = {};
+    inputs.forEach((input) => {
+        datos[input.name] = input.value;
+    });
+    localStorage.setItem('datosFormulario', JSON.stringify(datos));
+    infoMsg.textContent = "Datos guardados correctamente!";
+    infoMsg.classList.remove('oculto');
+    setTimeout(() => {
+        infoMsg.classList.add('oculto');
+    }, 3000);
+}
+
+// Recuperar datos de localStorage
+function recuperarDatos() {
+    const datos = JSON.parse(localStorage.getItem('datosFormulario'));
+    if (datos) {
+        inputs.forEach((input) => {
+            if (datos[input.name]) {
+                input.value = datos[input.name];
+                validate(input, patterns[input.name]);
+            }
+        });
+        infoMsg.textContent = "Datos recuperados correctamente!";
+        
+    } else {
+        infoMsg.textContent = "Datos guardados correctamente!";
+    }
+    infoMsg.classList.remove('oculto');
+        setTimeout(() => {
+            infoMsg.classList.add('oculto');
+        }, 3000);
+}
+
+btnGuardar.addEventListener('click', guardarDatos);
+btnRecuperar.addEventListener('click', recuperarDatos);
