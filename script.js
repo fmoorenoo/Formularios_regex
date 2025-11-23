@@ -3,7 +3,6 @@ btnGuardar.disabled = true;
 const btnRecuperar = document.getElementById('btnrecuperar');
 const infoMsg = document.querySelector('.info-msg');
 
-
 // Objeto de patrones de REGEX.
 const patterns = {
     nombre: /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/u,
@@ -20,6 +19,11 @@ const patterns = {
     repcontrasena: /.*/
 };
 
+// Contraseñas (sin los ••••)
+const contrasenas = {
+    contrasena: "",
+    repcontrasena: ""
+};
 
 //// Declaramos la constante 'inputs' que contendrá la colección de inputs. 
 const form = document.querySelector('#formulario').addEventListener('submit', (e) => {
@@ -27,16 +31,102 @@ const form = document.querySelector('#formulario').addEventListener('submit', (e
 });
 const inputs = document.querySelectorAll('input');
 
+// Borra en la posición del cursor o selección
+function borrarCaracteres(valor, start, end) {
+    if (start === 0 && start === end) {
+        return { nuevoValor: valor, nuevaPos: start };
+    }
 
-//// Haciendo uso del método forEach, añadimos el evento keyup a cada uno de los inputs de la colección '(input)'.
+    // Si hay selección, borrar el rango [start, end]
+    if (start !== end) {
+        const nuevoValor = valor.slice(0, start) + valor.slice(end);
+        return { nuevoValor, nuevaPos: start };
+    }
+
+    // Si no hay selección, borrar el carácter a la izquierda del cursor
+    const nuevoValor = valor.slice(0, start - 1) + valor.slice(start);
+    return { nuevoValor, nuevaPos: start - 1 };
+}
+
+// Validación en keyup (sin ser contraseñas)
 inputs.forEach((input) => {
     input.addEventListener('keyup', (e) => {
-        if (e.target.attributes.name.value.trim() != "") {
-            validate(e.target, patterns[e.target.attributes.name.value]);
+        const name = e.target.name;
+        if (!name || name.trim() === "") return;
+
+        if (name === "contrasena" || name === "repcontrasena") {
+            return;
+        }
+
+        validate(e.target, patterns[name]);
+    });
+});
+
+// Manejar eventos (borrar y puntos en contraseñas)
+inputs.forEach((input) => {
+    input.addEventListener('keydown', (e) => {
+        const name = input.name;
+
+        if (name === "contrasena" || name === "repcontrasena") {
+            if (e.key === "Backspace") {
+                e.preventDefault();
+                const start = input.selectionStart ?? contrasenas[name].length;
+                const end = input.selectionEnd ?? contrasenas[name].length;
+                const { nuevoValor, nuevaPos } = borrarCaracteres(contrasenas[name], start, end);
+                contrasenas[name] = nuevoValor;
+                input.value = "•".repeat(contrasenas[name].length);
+                input.selectionStart = input.selectionEnd = Math.max(0, Math.min(nuevaPos, input.value.length));
+                validatePasswordField(name, input);
+                return;
+            }
+
+            if (e.key.length > 1 || e.ctrlKey || e.metaKey || e.altKey) {
+                return;
+            }
+
+            e.preventDefault();
+            const start = input.selectionStart ?? contrasenas[name].length;
+            const end = input.selectionEnd ?? contrasenas[name].length;
+            const antes = contrasenas[name].slice(0, start);
+            const despues = contrasenas[name].slice(end);
+            contrasenas[name] = antes + e.key + despues;
+            input.value = "•".repeat(contrasenas[name].length);
+            const nuevaPos = start + 1;
+            input.selectionStart = input.selectionEnd = Math.max(0, Math.min(nuevaPos, input.value.length));
+            validatePasswordField(name, input);
+            return;
+        }
+
+        // Resto de campos
+        if (e.key === "Backspace") {
+            e.preventDefault();
+            const start = input.selectionStart ?? input.value.length;
+            const end = input.selectionEnd ?? input.value.length;
+            const { nuevoValor, nuevaPos } = borrarCaracteres(input.value, start, end);
+            input.value = nuevoValor;
+            let pos = nuevaPos;
+            if (pos < 0) {
+                pos = 0;
+            } else if (pos > input.value.length) {
+                pos = input.value.length;
+            }
+            input.selectionStart = pos;
+            input.selectionEnd = pos;
+            const name = input.name;
+            if (name && name.trim() !== "") {
+                validate(input, patterns[name]);
+            }
         }
     });
 });
 
+// Validar campo de contraseña
+function validatePasswordField(name, input) {
+    const realValue = contrasenas[name] || "";
+    input.value = realValue;
+    validate(input, patterns[name]);
+    input.value = "•".repeat(realValue.length);
+}
 
 function validate(campo, regex) {
     const contenedor = campo.parentElement;
@@ -52,7 +142,8 @@ function validate(campo, regex) {
         movil: "Debe empezar por 6 o 7, y deben ser 9 dígitos.",
         iban: "IBAN incorrecto. Debe ser 'ES', seguido de 22 dígitos.",
         credito: "Tarjeta no válida. Debe tener entre 13 y 19 dígitos",
-        contrasena: "Debe tener 12 caracteres incluyendo letra, número y símbolo."
+        contrasena: "Debe tener 12 caracteres incluyendo letra, número y símbolo.",
+        repcontrasena: "Las contraseñas no coinciden o no cumplen el formato."
     };
 
     let mensaje = contenedor.querySelector('.mensaje-error');
@@ -63,14 +154,57 @@ function validate(campo, regex) {
         contenedor.appendChild(mensaje);
     }
 
+    if (campo.name === "contrasena" || campo.name === "repcontrasena") {
+        campo.value = contrasenas[campo.name] || "";
+    }
+
+    // Validar contraseña
+    if (campo.name === "repcontrasena") {
+        const valorRep = contrasenas.repcontrasena || "";
+        const valorContrasena = contrasenas.contrasena || "";
+        if (valorRep.trim() === "") {
+            campo.classList.remove('valido', 'invalido');
+            mensaje.textContent = "";
+            mensaje.style.display = "none";
+            comprobarCamposValidos();
+            return;
+        }
+
+        const regexContrasena = patterns.contrasena;
+        const cumpleFormato = regexContrasena.test(valorRep);
+        const coincide = valorRep === valorContrasena;
+        if (cumpleFormato && coincide) {
+            campo.classList.remove('invalido');
+            campo.classList.add('valido');
+            mensaje.textContent = "";
+            mensaje.style.display = "none";
+        } else {
+            campo.classList.remove('valido');
+            campo.classList.add('invalido');
+            if (!cumpleFormato) {
+                mensaje.textContent = mensajes.contrasena;
+            } else if (!coincide) {
+                mensaje.textContent = "Las contraseñas no coinciden.";
+            } else {
+                mensaje.textContent = mensajes.repcontrasena;
+            }
+            mensaje.style.display = "block";
+        }
+
+        comprobarCamposValidos();
+        return;
+    }
+
+    // Resto de campos
     if (campo.value.trim() === "") {
         campo.classList.remove('valido', 'invalido');
         mensaje.textContent = "";
         mensaje.style.display = "none";
+        comprobarCamposValidos();
         return;
     }
 
-    if (regex.test(campo.value)) {
+    if (regex && regex.test(campo.value)) {
         campo.classList.remove('invalido');
         campo.classList.add('valido');
 
@@ -84,27 +218,22 @@ function validate(campo, regex) {
         mensaje.style.display = "block";
     }
 
-    // Verificar que repetir contraseña sea igual a contraseña
-    if (campo.name === "repcontrasena") {
-        const contrasena = document.querySelector('input[name="contrasena"]');
-
-        if (campo.value === contrasena.value && campo.value !== "") {
-            campo.classList.remove('invalido');
-            campo.classList.add('valido');
-            mensaje.textContent = "";
-            mensaje.style.display = "none";
-        } else {
-            campo.classList.remove('valido');
-            campo.classList.add('invalido');
-            mensaje.textContent = "Las contraseñas no coinciden.";
-            mensaje.style.display = "block";
+    // Revalidar campo de 'repetir' si cambia la contraseña
+    if (campo.name === "contrasena") {
+        const rep = document.querySelector('input[name="repcontrasena"]');
+        if (rep) {
+            validatePasswordField("repcontrasena", rep);
         }
     }
 
-    // Comprobar si tyodos los campos son válidos para habilitar el botón de guardar
+    comprobarCamposValidos();
+}
+
+// Comprueba si todos los campos son válidos para habilitar el botón de guardar
+function comprobarCamposValidos() {
     let todosValidos = true;
     inputs.forEach((input) => {
-        if (!input.classList.contains('valido')) {
+        if (input.value.trim() === "" || !input.classList.contains('valido')) {
             todosValidos = false;
         }
     });
@@ -115,7 +244,11 @@ function validate(campo, regex) {
 function guardarDatos() {
     const datos = {};
     inputs.forEach((input) => {
-        datos[input.name] = input.value;
+        if (input.name === "contrasena" || input.name === "repcontrasena") {
+            datos[input.name] = contrasenas[input.name] || "";
+        } else {
+            datos[input.name] = input.value;
+        }
     });
     localStorage.setItem('datosFormulario', JSON.stringify(datos));
     infoMsg.textContent = "Datos guardados correctamente!";
@@ -130,20 +263,28 @@ function recuperarDatos() {
     const datos = JSON.parse(localStorage.getItem('datosFormulario'));
     if (datos) {
         inputs.forEach((input) => {
-            if (datos[input.name]) {
-                input.value = datos[input.name];
-                validate(input, patterns[input.name]);
+            if (!input.name) return;
+
+            if (input.name === "contrasena" || input.name === "repcontrasena") {
+                const valorReal = datos[input.name] || "";
+                contrasenas[input.name] = valorReal;
+                input.value = "•".repeat(valorReal.length);
+                validatePasswordField(input.name, input);
+            } else {
+                if (datos[input.name]) {
+                    input.value = datos[input.name];
+                    validate(input, patterns[input.name]);
+                }
             }
         });
         infoMsg.textContent = "Datos recuperados correctamente!";
-        
     } else {
-        infoMsg.textContent = "Datos guardados correctamente!";
+        infoMsg.textContent = "No hay datos guardados.";
     }
     infoMsg.classList.remove('oculto');
-        setTimeout(() => {
-            infoMsg.classList.add('oculto');
-        }, 3000);
+    setTimeout(() => {
+        infoMsg.classList.add('oculto');
+    }, 3000);
 }
 
 btnGuardar.addEventListener('click', guardarDatos);
