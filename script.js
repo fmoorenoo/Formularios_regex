@@ -1,6 +1,6 @@
-const btnGuardar = document.getElementById('btnguardar');
+const btnGuardar = document.querySelector('#btnguardar');
 btnGuardar.disabled = true;
-const btnRecuperar = document.getElementById('btnrecuperar');
+const btnRecuperar = document.querySelector('#btnrecuperar');
 const infoMsg = document.querySelector('.info-msg');
 
 // Objeto de patrones de REGEX.
@@ -158,7 +158,7 @@ function validate(campo, regex) {
         campo.value = contrasenas[campo.name] || "";
     }
 
-    // Validar contraseña
+    // Validar repetir contraseña
     if (campo.name === "repcontrasena") {
         const valorRep = contrasenas.repcontrasena || "";
         const valorContrasena = contrasenas.contrasena || "";
@@ -240,7 +240,7 @@ function comprobarCamposValidos() {
     btnGuardar.disabled = !todosValidos;
 }
 
-// Guardar datos con localStorage
+// Guardar datos con sessionStorage
 function guardarDatos() {
     const datos = {};
     inputs.forEach((input) => {
@@ -250,7 +250,7 @@ function guardarDatos() {
             datos[input.name] = input.value;
         }
     });
-    localStorage.setItem('datosFormulario', JSON.stringify(datos));
+    sessionStorage.setItem('datosFormulario', JSON.stringify(datos));
     infoMsg.textContent = "Datos guardados correctamente!";
     infoMsg.classList.remove('oculto');
     setTimeout(() => {
@@ -258,9 +258,9 @@ function guardarDatos() {
     }, 3000);
 }
 
-// Recuperar datos de localStorage
+// Recuperar datos de sessionStorage
 function recuperarDatos() {
-    const datos = JSON.parse(localStorage.getItem('datosFormulario'));
+    const datos = JSON.parse(sessionStorage.getItem('datosFormulario'));
     if (datos) {
         inputs.forEach((input) => {
             if (!input.name) return;
