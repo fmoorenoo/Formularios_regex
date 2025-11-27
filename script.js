@@ -1,7 +1,10 @@
-const btnGuardar = document.querySelector('#btnguardar');
-btnGuardar.disabled = true;
-const btnRecuperar = document.querySelector('#btnrecuperar');
-const infoMsg = document.querySelector('.info-msg');
+const btnGetJson  = document.querySelector('#btnGetJson');
+const btnPostPhp  = document.querySelector('#btnPostPhp');
+const btnGetPhp   = document.querySelector('#btnGetPhp');
+const btnPostSql  = document.querySelector('#btnPostSql');
+const btnGetSql   = document.querySelector('#btnGetSql');
+const infoMsg     = document.querySelector('.info-msg');
+
 
 // Objeto de patrones de REGEX.
 const patterns = {
@@ -240,52 +243,201 @@ function comprobarCamposValidos() {
     btnGuardar.disabled = !todosValidos;
 }
 
-// Guardar datos con sessionStorage
-function guardarDatos() {
-    const datos = {};
-    inputs.forEach((input) => {
-        if (input.name === "contrasena" || input.name === "repcontrasena") {
-            datos[input.name] = contrasenas[input.name] || "";
-        } else {
-            datos[input.name] = input.value;
+// Construir objeto JSON con los nombres del enunciado
+function construirObjetoServidor() {
+    return {
+        nombre:    document.querySelector('#nombre').value,
+        apellido:  document.querySelector('#apellidos').value,
+        dni:       document.querySelector('#dninie').value,
+        fecha:     document.querySelector('#nacimiento').value,
+        cp:        document.querySelector('#postal').value,
+        correo:    document.querySelector('#email').value,
+        "teléfono": document.querySelector('#fijo').value,
+        "móvil":    document.querySelector('#movil').value,
+        tarjeta:   document.querySelector('#credito').value,
+        iban:      document.querySelector('#iban').value,
+        "contraseña": contrasenas.contrasena || ""
+    };
+}
+
+// Rellenar el formulario a partir del objeto devuelto por servidor
+function rellenarFormularioDesdeServidor(datos) {
+    if (!datos) return;
+
+    document.querySelector('#nombre').value    = datos.nombre || "";
+    document.querySelector('#apellidos').value = datos.apellido || "";
+    document.querySelector('#dninie').value    = datos.dni || "";
+    document.querySelector('#nacimiento').value= datos.fecha || "";
+    document.querySelector('#postal').value    = datos.cp || "";
+    document.querySelector('#email').value     = datos.correo || "";
+    document.querySelector('#fijo').value      = datos["teléfono"] || "";
+    document.querySelector('#movil').value     = datos["móvil"] || "";
+    document.querySelector('#credito').value   = datos.tarjeta || "";
+    document.querySelector('#iban').value      = datos.iban || "";
+
+    // Contraseñas
+    const valorPass = datos["contraseña"] || "";
+    contrasenas.contrasena   = valorPass;
+    contrasenas.repcontrasena= valorPass;
+
+    const inputCon = document.querySelector('#contrasena');
+    const inputRep = document.querySelector('#repcontrasena');
+
+    if (inputCon) {
+        inputCon.value = "•".repeat(valorPass.length);
+        validatePasswordField("contrasena", inputCon);
+    }
+    if (inputRep) {
+        inputRep.value = "•".repeat(valorPass.length);
+        validatePasswordField("repcontrasena", inputRep);
+    }
+
+    // Vuelve a validar todos los campos
+    document.querySelectorAll('input').forEach(input => {
+        const name = input.name;
+        if (patterns[name]) {
+            validate(input, patterns[name]);
         }
     });
-    sessionStorage.setItem('datosFormulario', JSON.stringify(datos));
-    infoMsg.textContent = "Datos guardados correctamente!";
-    infoMsg.classList.remove('oculto');
-    setTimeout(() => {
-        infoMsg.classList.add('oculto');
-    }, 3000);
 }
 
-// Recuperar datos de sessionStorage
-function recuperarDatos() {
-    const datos = JSON.parse(sessionStorage.getItem('datosFormulario'));
-    if (datos) {
-        inputs.forEach((input) => {
-            if (!input.name) return;
+// Limpiar formulario tras publicar
+function limpiarFormulario() {
+    document.querySelectorAll('input').forEach(input => {
+        input.value = "";
+        input.classList.remove('valido', 'invalido');
+    });
+    contrasenas.contrasena = "";
+    contrasenas.repcontrasena = "";
+}
 
-            if (input.name === "contrasena" || input.name === "repcontrasena") {
-                const valorReal = datos[input.name] || "";
-                contrasenas[input.name] = valorReal;
-                input.value = "•".repeat(valorReal.length);
-                validatePasswordField(input.name, input);
+// Mostrar mensaje
+function mostrarMensaje(texto) {
+    infoMsg.textContent = texto;
+    infoMsg.classList.remove('oculto');
+    setTimeout(() => infoMsg.classList.add('oculto'), 4000);
+}
+
+// 1) Obtener desde .json (GET .json)
+function obtenerDesdeJson() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'datos.json', true);
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                var obj = JSON.parse(this.responseText);
+                rellenarFormularioDesdeServidor(obj);
+                mostrarMensaje('Datos cargados desde datos.json');
             } else {
-                if (datos[input.name]) {
-                    input.value = datos[input.name];
-                    validate(input, patterns[input.name]);
-                }
+                mostrarMensaje('Error al cargar datos desde JSON');
             }
-        });
-        infoMsg.textContent = "Datos recuperados correctamente!";
-    } else {
-        infoMsg.textContent = "No hay datos guardados.";
-    }
-    infoMsg.classList.remove('oculto');
-    setTimeout(() => {
-        infoMsg.classList.add('oculto');
-    }, 3000);
+        }
+    };
+    xhr.send();
 }
 
-btnGuardar.addEventListener('click', guardarDatos);
-btnRecuperar.addEventListener('click', recuperarDatos);
+// 2) Publicar en .php (POST)
+function publicarEnPhp() {
+    // Opcional: podrías comprobar que el formulario es válido
+    var obj = construirObjetoServidor();
+    var dbParam = JSON.stringify(obj);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'http://localhost/Formularios_regex/process.php', true);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                console.log(this.responseText);
+                var respuesta = JSON.parse(this.responseText);
+                mostrarMensaje(respuesta.nombre + ' fue enviado correctamente al PHP');
+                limpiarFormulario();
+            } else {
+                mostrarMensaje('Error al hacer POST a process.php');
+            }
+        }
+    };
+    xhr.send("x=" + encodeURIComponent(dbParam));
+}
+
+// 3) Obtener desde .php (GET .php)
+function obtenerDesdePhp() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'http://localhost/Formularios_regex/process.php', true);
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                console.log(this.responseText);
+                var obj = JSON.parse(this.responseText);
+                rellenarFormularioDesdeServidor(obj);
+                mostrarMensaje('Datos obtenidos desde process.php');
+            } else {
+                mostrarMensaje('Error al obtener datos desde process.php');
+            }
+        }
+    };
+    xhr.send();
+}
+
+// 4) Publicar base de datos (POST + SQL)
+function publicarBaseDatos() {
+    var obj = construirObjetoServidor();
+    var dbParam = JSON.stringify(obj);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'http://localhost/Formularios_regex/insertUser.php', true);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                console.log(this.responseText);
+                var resp = JSON.parse(this.responseText);
+                if (resp.ok) {
+                    mostrarMensaje('Datos almacenados en la base de datos correctamente');
+                    limpiarFormulario();
+                } else {
+                    mostrarMensaje('Error BD: ' + (resp.error || ''));
+                }
+            } else {
+                mostrarMensaje('Error al conectar con insertUser.php');
+            }
+        }
+    };
+    xhr.send("x=" + encodeURIComponent(dbParam));
+}
+
+// 5) Obtener base de datos (GET + SQL)
+function obtenerBaseDatos() {
+    var dni = document.querySelector('#dninie').value.trim();
+    if (dni === "") {
+        mostrarMensaje('Introduce un DNI para buscar en la base de datos');
+        return;
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'http://localhost/Formularios_regex/getUser.php?dni=' + encodeURIComponent(dni), true);
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                console.log(this.responseText);
+                var obj = JSON.parse(this.responseText);
+                if (Object.keys(obj).length === 0) {
+                    mostrarMensaje('No se ha encontrado ningún registro con ese DNI');
+                } else {
+                    rellenarFormularioDesdeServidor(obj);
+                    mostrarMensaje('Registro cargado desde la base de datos');
+                }
+            } else {
+                mostrarMensaje('Error al conectar con getUser.php');
+            }
+        }
+    };
+    xhr.send();
+}
+
+// Eventos de los botones
+btnGetJson.addEventListener('click', obtenerDesdeJson);
+btnPostPhp.addEventListener('click', publicarEnPhp);
+btnGetPhp.addEventListener('click', obtenerDesdePhp);
+btnPostSql.addEventListener('click', publicarBaseDatos);
+btnGetSql.addEventListener('click', obtenerBaseDatos);
